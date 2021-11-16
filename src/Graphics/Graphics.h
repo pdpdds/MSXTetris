@@ -117,6 +117,30 @@ void PosMaskSprites(word VRAMaddress, byte y) {
 	WRTVRM(VRAMaddress + 15, 0b1000000); // Early Clock bit makes x = -32 (out of the screen)  
 }
 
+
+void DrawNextBlock8(byte col, byte line, byte tile) {
+	//const byte horizOffset = 10;	// playfield offset from screen left border
+	word baseAddr = NAMTBL + col + ((line + 8) * 32) + 3;
+	WRTVRM(baseAddr, tile);
+}
+
+
+void DrawNextPiece()
+{
+	for (byte line = 0; line < 4; line++)
+	{
+		for (byte col = 0; col < 4; col++)
+		{
+			if(g_next_piece.shape[line][col])
+				DrawNextBlock8(col, line, TILE_YELLOW);
+			else
+			{
+				DrawNextBlock8(col, line, 0);
+			}
+		}
+	}
+}
+
 /*void DrawNextPiece() {
   byte y = 24+24, counter = 0;
 
@@ -289,7 +313,7 @@ void DrawScore() {
 	DrawNumber(level, 26, 11);
 	DrawNumber(blocksRemoved, 26, 19);
 
-	//DrawNextPiece();
+	DrawNextPiece();
 }
 
 void DrawBackground() {
@@ -298,8 +322,8 @@ void DrawBackground() {
 		WRTVRM(NAMTBL + i, EMPTY); // test
 	}
 
-	DrawColumn(7);
-	DrawColumn(22);
+	DrawColumn(8);
+	DrawColumn(21);
 
 	DrawScore();
 	//DrawString(" LEVEL", 26, 4);
@@ -517,7 +541,7 @@ void DrawLine(byte line) {
 void DrawBlock8(byte col, byte line, byte tile) {
 	//const byte horizOffset = 10;	// playfield offset from screen left border
 	word baseAddr = NAMTBL + col + (line * 32) + PLAYFIELD_HORIZ_OFFSET;
-
+	
 	WRTVRM(baseAddr, tile);
 }
 

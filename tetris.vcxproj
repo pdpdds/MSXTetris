@@ -91,6 +91,7 @@
     <ClCompile Include="msxromapp.c" />
     <ClCompile Include="src\game.c" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\msxbios.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

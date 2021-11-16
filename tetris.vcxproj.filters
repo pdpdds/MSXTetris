@@ -132,5 +132,8 @@
     <ClCompile Include="src\game.c">
       <Filter>C Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\msxbios.c">
+      <Filter>C Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

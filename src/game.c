@@ -15,49 +15,49 @@
 
 
 //조각. 총 7개
-const int shape_bar[4][4] = {
+const uint8_t shape_bar[4][4] = {
     {0, 0, 0, 0},
     {0, 0, 0, 0},
     {1, 1, 1, 1},
     {0, 0, 0, 0} };
 
-const int shape_square[4][4] = {
+const uint8_t shape_square[4][4] = {
     {1, 1, 0, 0},
     {1, 1, 0, 0},
     {0, 0, 0, 0},
     {0, 0, 0, 0} };
 
-const int shape_j[4][4] = {
+const uint8_t shape_j[4][4] = {
     {0, 0, 0, 0},
     {1, 0, 0, 0},
     {1, 1, 1, 0},
     {0, 0, 0, 0} };
 
-const int shape_l[4][4] = {
+const uint8_t shape_l[4][4] = {
     {0, 0, 1, 0},
     {1, 1, 1, 0},
     {0, 0, 0, 0},
     {0, 0, 0, 0} };
 
-const int shape_s[4][4] = {
+const uint8_t shape_s[4][4] = {
     {0, 1, 1, 0},
     {1, 1, 0, 0},
     {0, 0, 0, 0},
     {0, 0, 0, 0} };
 
-const int shape_z[4][4] = {
+const uint8_t shape_z[4][4] = {
     {1, 1, 0, 0},
     {0, 1, 1, 0},
     {0, 0, 0, 0},
     {0, 0, 0, 0} };
 
-const int shape_t[4][4] = {
+const uint8_t shape_t[4][4] = {
     {0, 1, 0, 0},
     {1, 1, 1, 0},
     {0, 0, 0, 0},
     {0, 0, 0, 0} };
 
-const int(*shapes[7])[4][4] = {
+const uint8_t(*shapes[7])[4][4] = {
     &shape_bar,
     &shape_square,
     &shape_l,
@@ -70,8 +70,10 @@ const int(*shapes[7])[4][4] = {
 //조각 정보 구조체
 typedef struct
 {
-    int shape[4][4];
-    int id;
+    uint8_t shape[4][4];
+    uint8_t id;
+    uint8_t offset_x;
+    uint8_t offset_y;
 } Piece;
 
 
@@ -96,16 +98,15 @@ byte playfieldTemp[LINES_PLAYFIELD][COLS_PLAYFIELD];
 bool gameOver = FALSE;
 byte g_col = 0, g_line = 0;
 byte counter = 0;
-//byte topPiece, midPiece, bottomPiece;
-//byte nextTopPiece, nextMidPiece, nextBottomPiece;
+
 
 Piece g_piece = { {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
                 
-                 0 };
+                 0, 0, 0 };
 
 Piece g_next_piece = { {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
                      
-                      0 };
+                      0, 0, 0 };
 
 //word score = 0;
 word blocksRemoved = 0;
@@ -131,6 +132,34 @@ byte speed, rndSeed = 0;
 #include "Graphics\Graphics.h"
 
 
+uint8_t set_piece_offset(Piece* piece)
+{
+    uint8_t offset = 0;
+    char temp = 0;
+    for (uint8_t col = 0; col < 4; col++)
+    {
+
+        for (uint8_t row = 0; row < 4; row++)
+        {
+            int tile = piece->shape[row][col];
+            if (tile)
+            {
+                temp = 1;
+                break;
+            }
+        }
+
+        if (temp)
+            break;
+
+        offset++;
+    }
+
+    piece->offset_x = offset;
+   
+
+    return offset;
+}
 
 
 void Wait(word numberOfFrames) {
@@ -296,16 +325,16 @@ void TitleScreen() {
 
 
     const char blocks[] = {
-      A, // yellow
-      B, // yellow
-      C, // magenta
-      D, // white
-      E, // cyan
-      F, // blue
-      G, // blue
+      (const char)A, // yellow
+      (const char)B, // yellow
+      (const char)C, // magenta
+      (const char)D, // white
+      (const char)E, // cyan
+      (const char)F, // blue
+      (const char)G, // blue
     };
 
-    const char colors[] = { A, C, E, G }; // last item will be ignored
+    byte colors[] = { (byte)A, (byte)C, (byte)E, (byte)G }; // last item will be ignored
     //const char colors[] = { A, C }; // test
 
     InitVRAM();
@@ -380,7 +409,7 @@ void TitleScreen() {
         */
         //rnd = GetRandomInInterval(7, 0b00000111);
 
-        for (byte i = 0; i < 10 + 0; i++) {
+        for (byte i = 0; i < 10; i++) {
 
             word lastJiffy = JIFFY;
             while (JIFFY == lastJiffy) {
@@ -479,271 +508,62 @@ void SoundFx_1() {
   __asm__("call 0x0093");
 }*/
 
-
-
-//#define POINTS_PER_BLOCK_REMOVED 	      10
-//#define POINTS_PER_COMBO 	              5
-
-// void CheckIfPlayfieldIsValid() {
-//   bool found = FALSE;
-//   for(byte line = 0; line < LINES_PLAYFIELD; line++) {
-//     for(byte col = 0; col < COLS_PLAYFIELD; col++) {
-//       for(byte item = 0; item < 5; item++) {
-//         found = FALSE;
-//       	if(playfieldTemp[col][line] == pieces[item] || playfieldTemp[col][line] == EMPTY) {
-//           found = TRUE;
-//           break;
-//         }
-//       }
-//       if(!found) {
-//         d_col = col;
-//         d_line = line;
-//         d_value = playfieldTemp[col][line];
-
-//         while(1) { 
-//           BEEP();
-//         }
-//       }
-
-//     }
-//   }
-// }
-
-
-void CheckPlayfield(byte iteration) {
-    bool piecesRemoved = FALSE;
-
-    // Save copy of playfield
-    for (byte line = 0; line < LINES_PLAYFIELD; line++) {
-        for (byte col = 0; col < COLS_PLAYFIELD; col++) {
-            playfieldTemp[line][col] = playfield[line][col];
-        }
+void drop_line(int n)
+{
+    for (int row = n; row > 0; row--)
+    {
+        if (row == LINES_PLAYFIELD)
+            continue;
+        memcpy(&playfield[row][0], &playfield[row - 1][0], sizeof(byte) * COLS_PLAYFIELD);
     }
+}
 
-    // Check lines
-    for (byte line = 0; line < LINES_PLAYFIELD; line++) {
-        for (byte col = 2; col < COLS_PLAYFIELD; col++) {
-            if (playfieldTemp[line][col] != EMPTY &&
-                playfieldTemp[line][col - 2] == playfieldTemp[line][col - 1] &&
-                playfieldTemp[line][col - 1] == playfieldTemp[line][col]) {
-
-                piecesRemoved = TRUE;
-
-                // Set cells to removing status
-                playfield[line][col - 2] = playfieldTemp[line][col - 2] | REMOVING_FLAG;
-                playfield[line][col - 1] = playfieldTemp[line][col - 1] | REMOVING_FLAG;
-                playfield[line][col] = playfieldTemp[line][col] | REMOVING_FLAG;
+uint8_t clear_lines()
+{
+    int n_lines = 0;
+    for (int row = 0; row < LINES_PLAYFIELD; row++)
+    {
+        int result = 1;
+        for (int col = 0; col < COLS_PLAYFIELD; col++)
+        {
+            if (playfield[row][col] == EMPTY)
+            {
+                result = 0;
             }
         }
-    }
-
-    // Check columns
-    for (byte line = 2; line < LINES_PLAYFIELD; line++) {
-        for (byte col = 0; col < COLS_PLAYFIELD; col++) {
-            if (playfieldTemp[line][col] != EMPTY &&
-                playfieldTemp[line - 2][col] == playfieldTemp[line - 1][col] &&
-                playfieldTemp[line - 1][col] == playfieldTemp[line][col]) {
-
-                piecesRemoved = TRUE;
-
-                // Set cells to removing status
-                playfield[line - 2][col] = playfieldTemp[line - 2][col] | REMOVING_FLAG;
-                playfield[line - 1][col] = playfieldTemp[line - 1][col] | REMOVING_FLAG;
-                playfield[line][col] = playfieldTemp[line][col] | REMOVING_FLAG;
-            }
+        if (result)
+        {
+            drop_line(row);
+            n_lines++;
         }
     }
+    return n_lines;
+}
 
-    // Check diagonals
-    for (byte line = 2; line < LINES_PLAYFIELD; line++) {
-        for (byte col = 2; col < COLS_PLAYFIELD; col++) {
-            if (playfieldTemp[line][col] != EMPTY &&
-                playfieldTemp[line - 2][col - 2] == playfieldTemp[line - 1][col - 1] &&
-                playfieldTemp[line - 1][col - 1] == playfieldTemp[line][col]) {
+void CheckPlayfield() {
+    
+    uint8_t clear_count = clear_lines();    
 
-                piecesRemoved = TRUE;
-
-                // Set cells to removing status
-                playfield[line - 2][col - 2] = playfieldTemp[line - 2][col - 2] | REMOVING_FLAG;
-                playfield[line - 1][col - 1] = playfieldTemp[line - 1][col - 1] | REMOVING_FLAG;
-                playfield[line][col] = playfieldTemp[line][col] | REMOVING_FLAG;
-            }
-            if (playfieldTemp[line - 2][col] != EMPTY &&
-                playfieldTemp[line - 1][col - 1] == playfieldTemp[line][col - 2] &&
-                playfieldTemp[line][col - 2] == playfieldTemp[line - 2][col]) {
-
-                piecesRemoved = TRUE;
-
-                // Set cells to removing status
-                playfield[line - 2][col] = playfieldTemp[line - 2][col] | REMOVING_FLAG;
-                playfield[line - 1][col - 1] = playfieldTemp[line - 1][col - 1] | REMOVING_FLAG;
-                playfield[line][col - 2] = playfieldTemp[line][col - 2] | REMOVING_FLAG;
-            }
-        }
-    }
-
-    if (piecesRemoved) {
-        byte numberPiecesRemoved;
-        byte oldLevel;
-
-        // Animation
-        byte counter = 72;
-        byte x = 255, y = 0;
-
-        byte leftmostPieceRemoved = 5, rightmostPieceRemoved = 0;
-        byte lowermostPieceRemoved = 11, upmostPieceRemoved = 0;
+    if (clear_count) {
+        
+        blocksRemoved += clear_count;
 
         HideArrowSprite();
 
-        SoundFx_2();
-
-        // Count pieces removed
-        numberPiecesRemoved = 0;
-        for (byte line = 0; line < LINES_PLAYFIELD; line++) {
-            for (byte col = 0; col < COLS_PLAYFIELD; col++) {
-                if ((playfield[line][col] & REMOVING_FLAG) != 0) {
-                    numberPiecesRemoved++;
-
-                    if (col < leftmostPieceRemoved) leftmostPieceRemoved = col;
-                    if (col > rightmostPieceRemoved) rightmostPieceRemoved = col;
-                    if (line < lowermostPieceRemoved) lowermostPieceRemoved = line;
-                    if (line > upmostPieceRemoved) upmostPieceRemoved = line;
-                }
-            }
-        }
-
-        // debug
-        // DrawNumber(numberPiecesRemoved, 0, 0);//test
-        // DrawNumber(iteration, 0, 1);//test
-        // DrawNumber(leftmostPieceRemoved, 0, 13);//test
-        // DrawNumber(rightmostPieceRemoved, 0, 14);//test
-        // DrawNumber(lowermostPieceRemoved, 0, 16);//test
-        // DrawNumber(upmostPieceRemoved, 0, 17);//test
-        //Wait(60);
-
-        while (counter-- > 0) {
-
-            word lastJiffy = JIFFY;
-            while (lastJiffy == JIFFY) {
-            }
-            // Animation loop sync'ed at 60/50 Hz starts here
-
-
-            // "?x HIT" sprite logic
-            if (numberPiecesRemoved >= 3) {
-
-                if (numberPiecesRemoved >= 7) numberPiecesRemoved = 7;
-
-                if (x == 255) { // do this expensive calculation only once
-                    x = (PLAYFIELD_HORIZ_OFFSET * 8) + (((rightmostPieceRemoved * 16) - (leftmostPieceRemoved * 16)) / 2) + (leftmostPieceRemoved * 16);
-                    //y = (((lowermostPieceRemoved * 16) - (upmostPieceRemoved * 16)) / 2) + (upmostPieceRemoved * 16) - (72 - counter);
-                    y = (((lowermostPieceRemoved * 16) - (upmostPieceRemoved * 16)) / 2) + (upmostPieceRemoved * 16);
-                    DrawHitSprite(numberPiecesRemoved, iteration, x, y, TRUE);
-                }
-                else {
-                    //y -= (72 - counter);
-                    // TODO: refactor here (line repeated; code expensive unnecessary)
-                    //y = (((lowermostPieceRemoved * 16) - (upmostPieceRemoved * 16)) / 2) + (upmostPieceRemoved * 16) - (72 - counter);
-                    DrawHitSprite(numberPiecesRemoved, iteration, x, y - (72 - counter), FALSE);
-                }
-            }
-
-            for (byte line = 0; line < LINES_PLAYFIELD; line++) {
-                for (byte col = 0; col < COLS_PLAYFIELD; col++) {
-
-                    if ((playfield[line][col] & REMOVING_FLAG) != 0) {
-
-                        // Animation 1: blocks blinking
-                        if (counter > 12) {
-                            if (JIFFY & 0b00000011) {
-                                DrawBlock8(col, line, playfield[line][col] & 0b01111111);
-                            }
-                            else {
-                                DrawBlock8(col, line, EMPTY);
-                            }
-                        }
-                        else {
-                            // Animation 2: blocks turning into dust
-                            if (counter > 9) DrawBlock_SameTile(col, line, DUST_1);
-                            else if (counter > 6) DrawBlock_SameTile(col, line, DUST_1 + 1);
-                            else if (counter > 3) DrawBlock_SameTile(col, line, DUST_1 + 2);
-                            else DrawBlock_SameTile(col, line, DUST_1 + 3);
-                        }
-
-                    }
-                }
-            }
-        }
+        SoundFx_1();                  
 
         HideHitSprite();
+        
+        DrawPlayfield();
 
+        //Wait(90);        
 
-
-        // After animation
-        for (byte line = 0; line < LINES_PLAYFIELD; line++) {
-            for (byte col = 0; col < COLS_PLAYFIELD; col++) {
-
-                if ((playfield[line][col] & REMOVING_FLAG) != 0) {
-
-                    blocksRemoved++;
-
-                    // Adjust the column above
-                    for (byte line1 = line; line1 > 0; line1--) {
-                        byte linesToBeRemoved = 1;
-                        if ((playfield[line1 - 1][col] & REMOVING_FLAG) != 0) linesToBeRemoved++;
-                        if ((playfield[line1 - 2][col] & REMOVING_FLAG) != 0) linesToBeRemoved++;
-
-                        //playfield[col][line1] = playfieldTemp[col][line1 - linesToBeRemoved];
-                        //playfield[col][line1] = playfield[col][(line1 - linesToBeRemoved >= 0) ? line1 - linesToBeRemoved : 0];
-                        playfield[line1][col] = (line1 - linesToBeRemoved >= 0) ? playfield[line1 - linesToBeRemoved][col] : EMPTY;
-                    }
-                }
-            }
-        }
-
-        // Wait(60);
-        //score = score + numberPiecesRemoved + POINTS_PER_COMBO; // causing slowdown
-        //score++;                                                  // works fine
-
-        // Level logic
-        oldLevel = level;
-        if (blocksRemoved >= 90) {
-            level = (blocksRemoved / 30) + 1;
-            speed = 15;
-            //DrawNumber(speed, 0, 0); // test
-        }
-        else if (blocksRemoved >= 60) {
-            level = 3;
-            speed = 30;
-        }
-        else if (blocksRemoved >= 30) {
-            level = 2;
-            speed = 45;
-        }
-        else {
-            level = 1;
-            speed = 60;
-        }
-
-        if (oldLevel != level) {
-            newLevel = TRUE;
-        }
-
-
-        //DrawPlayfield();
-
-        //Wait(90);
-
-        //CheckIfPlayfieldIsValid(); // test
-
-        //DrawScore();
-
-        iteration++;
-        CheckPlayfield(iteration);
+        DrawScore();        
     }
-    else {
-        //SoundFx_1();
-        //DrawScore();
+    else 
+    {
+        SoundFx_2();
+        DrawScore();
     }
 }
 
@@ -776,21 +596,7 @@ byte rect_piece = TILE_RED;
 void UpdateAndDrawPieceStatic() {
 
     // Update and draw piece static
-    for (int row = 0; row < 4; row++)
-    {
-        for (int col = 0; col < 4; col++)
-        {
-            
-            int tile = g_piece.shape[row][col];
-            if (tile)
-            {
-                playfield[g_line + row][g_col + col] = rect_piece;
-            }
-        }
-    }
-
-
-    DrawPiece(g_line);
+    UpdatePlayField();
 
     // Set piece to next
     g_col = INITIAL_COL;
@@ -807,9 +613,9 @@ void UpdateAndDrawPieceStatic() {
     else {
         RandomPiece();
 
-        //CheckPlayfield(1);
+        CheckPlayfield();
 
-       // DrawNextPiece();
+       DrawNextPiece();
     }
 
     DrawPlayfield();
@@ -866,16 +672,15 @@ void Pause() {
 
         }
     }
-
 }
 
 uint8_t colliding(const Piece* piece)
 {
     for (uint8_t row = 0; row < 4; row++)
     {
-        for (uint8_t col = 0; col < 4; col++)
+        for (uint8_t col = 0; col < 4 - piece->offset_x; col++)
         {
-            if (piece->shape[row][col])
+            if (piece->shape[row][col + piece->offset_x])
             {
                 uint8_t x = g_line + row;
                 uint8_t y = g_col + col;
@@ -917,7 +722,7 @@ int rotate()
         {
             for (int col = 0; col < 3; col++)
             {
-                tmp.shape[row][col] = g_piece.shape[3 - col - 1][row];
+                tmp.shape[row][col] = g_piece.shape[col][row];
             }
         }
     }
@@ -932,41 +737,131 @@ int rotate()
         }
     }
 
+    set_piece_offset(&tmp);
+
     if (colliding(&tmp))
         return 0;
 
     g_piece = tmp;
+   // g_col += g_piece.offset_x;
 
     return 1;
 }
 
 
-void InitPiecePlayField()
+
+
+void DrawPiece1(uint8_t line)
 {
+    //Set piece at updated position
+
+    char first = 0;
     for (uint8_t row = 0; row < 4; row++)
     {
-        for (uint8_t col = 0; col < 4; col++)
+        char draw = 0;
+        for (uint8_t col = 0; col < 4 - g_piece.offset_x; col++)
         {
-            
-            playfield[g_line + row][g_col + col] = EMPTY;
+            int tile = g_piece.shape[row][col + g_piece.offset_x];
+            if (tile)
+            {
+                first = 1;
+                draw = 1;
+            }
         }
+
+        // Draw piece at current position
+       // if (draw || first == 0)
+            DrawLine8(line + row);
     }
 }
 
-void UpdatePlayField()
+void DrawPlayField()
 {
+    //Set piece at updated position
     for (uint8_t row = 0; row < 4; row++)
     {
-        for (uint8_t col = 0; col < 4; col++)
+        char draw = 0;
+        for (uint8_t col = 0; col < 4 - g_piece.offset_x; col++)
         {
-            int tile = g_piece.shape[row][col];
+            int tile = g_piece.shape[row][col + g_piece.offset_x];
+            if (tile)
+            {       
+                
+                draw = 1;
+            }
+        }
+
+        // Draw piece at current position
+        if (draw)
+            DrawLine8(g_line + row);
+    }
+}
+
+void InitPiecePlayField()
+{
+    //Set piece at updated position
+
+    
+
+    for (uint8_t row = 0; row < 4; row++)
+    {
+
+        for (uint8_t col = 0; col < 4 - g_piece.offset_x; col++)
+        {
+            int tile = g_piece.shape[row][col + g_piece.offset_x];
             if (tile)
             {
+                playfield[g_line + row][g_col + col] = EMPTY;
+            }
+        }
+
+
+    }
+}
+
+
+
+void UpdatePlayField()
+{
+    //Set piece at updated position
+    
+    for (uint8_t row = 0; row < 4; row++)
+    {
+       
+        for (uint8_t col = 0; col < 4 - g_piece.offset_x; col++)
+        {
+            int tile = g_piece.shape[row][col + g_piece.offset_x];
+            if (tile)
+            {
+                switch (g_piece.id)
+                {
+                case 0:
+                    rect_piece = TILE_BLUE;
+                    break;
+                case 1:
+                    rect_piece = TILE_PURPLE;
+                    break;
+                case 2:
+                    rect_piece = TILE_YELLOW;
+                    break;
+                case 3:
+                    rect_piece = TILE_RED;
+                    break;
+                case 4:
+                    rect_piece = TILE_BLUE;
+                    break;
+                case 5:
+                    rect_piece = TILE_PURPLE;
+                    break;
+                case 6:
+                    rect_piece = TILE_YELLOW;
+                    break;
+                }
                 playfield[g_line + row][g_col + col] = rect_piece;
             }
-            else
-                playfield[g_line + row][g_col + col] = EMPTY;
         }
+
+        
     }
 }
 
@@ -1046,29 +941,12 @@ void GameLoop() {
                 }
 
                 DrawPiece(g_line);
-                UpdateAndDrawPieceStatic();
-
-                /*
-                for (byte i = g_line; i < LINES_PLAYFIELD; i++) 
-                {
-                    if (i == LINES_PLAYFIELD - 4 || playfield[i + 4][g_col] != EMPTY) {
-
-                        // Clear current piece lines
-                        DrawPiece(g_line);
-
-                        g_line = i;
-
-                        UpdateAndDrawPieceStatic();
-                        break;
-                    }
-                }*/
+                UpdateAndDrawPieceStatic();               
 
             }
 
         }
-
-        //if(joystick == STCK_W || joystick == STCK_E) lastJoystick_LeftRight = joystick; else lastJoystick_LeftRight = STCK_none;
-        //if(joystick == STCK_N || joystick == STCK_S) lastJoystick_UpDown = joystick; else lastJoystick_UpDown = STCK_none;
+        
         lastJoystick_LeftRight = joystick;
         lastJoystick_UpDown = joystick;
         lastBtn1 = btn1;
@@ -1108,52 +986,22 @@ void GameLoop() {
         if (counter == speed) {
 
             counter = 0;
+            
 
-            // Draw piece before update position
-            DrawPiece(g_line);
-
-
-            // Check if piece hit bottom or other piece
-            if (g_line == LINES_PLAYFIELD - 4 || playfield[g_line + 4][g_col] != EMPTY) {
-
-                UpdateAndDrawPieceStatic();
-            }
+            DrawPiece1(g_line);
 
             g_line++;
-
-        }
-
+                       
+            if (colliding(&g_piece))
+            {           
+                g_line--;
+                UpdateAndDrawPieceStatic();                
+            }            
+		}
+        
+        
         UpdatePlayField();
-
-        //Set piece at updated position
-        //playfield[col][line] = topPiece;
-        //playfield[col][line + 1] = midPiece;
-        //playfield[col][line + 2] = bottomPiece;
-
-
-
-        // Draw piece at current position
-        DrawPiece(g_line);
-
-
-
-        // Draw arrow sprite indicating where the piece will drop
-        if (playfield[g_line + 4][g_col] != EMPTY) {
-            HideArrowSprite();
-        }
-        else {
-            for (byte i = g_line + 4; i < LINES_PLAYFIELD; i++) {
-                if (i == LINES_PLAYFIELD - 1 && playfield[i][g_col] == EMPTY) {
-                    DrawArrowSprite((g_col * 16) + (PLAYFIELD_HORIZ_OFFSET * 8), (i) * 16);
-                    break;
-                }
-                else if (playfield[i][g_col] != EMPTY) {
-                    DrawArrowSprite((g_col * 16) + (PLAYFIELD_HORIZ_OFFSET * 8), (i - 1) * 16);
-                    break;
-                }
-            }
-        }
-
+        DrawPiece1(g_line);        	
     }
 
     DrawString("GAME OVER", 12, 12);
@@ -1162,50 +1010,7 @@ void GameLoop() {
 
     // Wait 5 seconds
     Wait(60 * 5);
-
 }
-
-/*void TestCase() {
-    // playfield[2][ 8] = TILE_GREEN;
-    // playfield[2][ 9] = TILE_BLUE;
-
-    // playfield[0][10] = TILE_BLUE;
-    // playfield[1][10] = TILE_BLUE;
-    // playfield[2][10] = TILE_RED;
-    // playfield[4][10] = TILE_RED;
-    // playfield[5][10] = TILE_BLUE;
-
-    // playfield[0][11] = TILE_GREEN;
-    // playfield[1][11] = TILE_GREEN;
-    // playfield[2][11] = TILE_RED;
-    // playfield[3][11] = TILE_BLUE;
-    // playfield[4][11] = TILE_RED;
-    // playfield[5][11] = TILE_RED;
-
-    // topPiece = TILE_BLUE;
-    // midPiece = TILE_RED;
-    // bottomPiece = TILE_YELLOW;
-
-    playfield[2][8] = TILE_GREEN;
-    playfield[2][9] = TILE_BLUE;
-
-    playfield[0][10] = TILE_BLUE;
-    playfield[1][10] = TILE_BLUE;
-    playfield[2][10] = TILE_RED;
-    playfield[4][10] = TILE_RED;
-    playfield[5][10] = TILE_BLUE;
-
-    playfield[0][11] = TILE_GREEN;
-    playfield[1][11] = TILE_GREEN;
-    playfield[2][11] = TILE_RED;
-    playfield[3][11] = EMPTY;
-    playfield[4][11] = TILE_RED;
-    playfield[5][11] = TILE_RED;
-
-    topPiece = TILE_BLUE;
-    midPiece = TILE_RED;
-    bottomPiece = TILE_RED;
-}*/
 
 void InitGame() {
 
@@ -1216,7 +1021,7 @@ void InitGame() {
     blocksRemoved = 0;
     level = 1;
     newLevel = FALSE;
-    speed = 60;
+    speed = 10;
 
     InitVRAM();
 
@@ -1239,15 +1044,15 @@ void InitGame() {
 
     //newLevel = TRUE;  //test
 
-    //DrawBackground();
+    DrawBackground();
 
-    //DrawPlayfield();
+    DrawPlayfield();
 
-    //DrawScore();
+    DrawScore();
 
-    //ShowCountdown();
+    ShowCountdown();
 
-    //DrawNextPiece();
+    DrawNextPiece();
 
     GameLoop();
 }

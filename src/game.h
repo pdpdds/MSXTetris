@@ -19,8 +19,10 @@ void SoundFx_2();
 void SoundFx_1();
 //void Sound();
 
-void CheckPlayfield(byte iteration);
+void CheckPlayfield();
 
 void InitGame();
+void FILVRM(uint16_t start, uint16_t len, uint8_t data);
+void SetBlock(byte col, byte line, byte tileNumber);
 
 #endif
