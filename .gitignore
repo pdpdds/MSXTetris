@@ -34,3 +34,6 @@
 v16
 Release
 Debug
+OUTPUT.TMP
+TargetConfig.h
+TargetConfig.s
