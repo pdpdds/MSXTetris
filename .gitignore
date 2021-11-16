@@ -37,3 +37,4 @@ Debug
 OUTPUT.TMP
 TargetConfig.h
 TargetConfig.s
+applicationsettings.s
