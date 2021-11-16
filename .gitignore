@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+v16
+Release
+Debug
