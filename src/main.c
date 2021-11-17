@@ -7,7 +7,7 @@ void main() {
 
   while(1) {
     
-      //TitleScreen();
+      TitleScreen();
 
 
       InitGame();
